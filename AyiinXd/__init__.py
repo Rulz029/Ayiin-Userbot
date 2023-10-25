@@ -41,7 +41,7 @@ var = Config()
 if var.STRING_SESSION:
     session = validate_session(var.STRING_SESSION)
 else:
-    session = "AyiinUserBot"
+    session = "Rulzuserbot"
 try:
     Ayiin = TelegramClient(
         session=session,
@@ -52,10 +52,10 @@ try:
         connection_retries=None,
     )
     setattr(
-        Ayiin,
+        Rulz,
         "calls",
         GroupCallFactory(
-            Ayiin,
+            Rulz,
             GroupCallFactory.MTPROTO_CLIENT_TYPE.TELETHON,
         ).get_group_call()
     )
@@ -119,11 +119,11 @@ async def update_restart_msg(chat_id, msg_id):
     from config import var
 
     message = (
-        f"**Ayiin-UserBot v`{var.BOT_VER}` is back up and running!**\n\n"
+        f"**Rulzuserbot v`{var.BOT_VER}` is back up and running!**\n\n"
         f"**Telethon:** `{vsc}`\n"
         f"**Python:** `{python_version()}`\n"
     )
-    await Ayiin.edit_message(chat_id, msg_id, message)
+    await Rulz.edit_message(chat_id, msg_id, message)
     return True
 
 
@@ -182,9 +182,9 @@ def ibuild_keyboard(buttons):
     return keyb
 
 
-with Ayiin:
+with Rulz:
     try:
-        user = Ayiin.get_me()
+        user = Rulz.get_me()
         OWNER_ID = user.id
     except BaseException as e:
         LOGS.info(e)

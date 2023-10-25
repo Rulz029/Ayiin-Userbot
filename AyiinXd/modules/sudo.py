@@ -1,133 +1,123 @@
-# Credits: @mrismanaziz
-# FROM Man-Userbot <https://github.com/mrismanaziz/Man-Userbot>
-# t.me/SharingUserbot & t.me/Lunatic0de
+# Ayra - UserBot
+# Copyright (C) 2021-2022 senpai80
+#
+# This file is a part of < https://github.com/senpai80/Ayra/ >
+# PLease read the GNU Affero General Public License in
+# <https://www.github.com/senpai80/Ayra/blob/main/LICENSE/>.
+"""
+✘ **Bantuan Untuk Sudo**
 
-import os
+๏ **Perintah:** `addsudo`
+◉ **Keterangan:** Tambahkan Pengguna Sudo dengan membalas ke pengguna atau menggunakan <spasi> userid yang terpisah
 
-import heroku3
-from telethon.tl.functions.users import GetFullUserRequest
+๏ **Perintah:** `delsudo`
+◉ **Keterangan:** Hapus Pengguna Sudo dengan membalas ke pengguna atau menggunakan <spasi> userid yang terpisah
 
-from AyiinXd import CMD_HELP
-from AyiinXd.ayiin import AyiinChanger, ayiin_cmd, eod, eor
-from AyiinXd.database.sudoer import add_sudo, del_sudo, sudoer
+๏ **Perintah:** `listsudo`
+◉ **Keterangan:** Daftar semua pengguna sudo.
+"""
 
-from . import cmd
+from Ayra._misc import sudoers
+from telethon.tl.types import User
+
+from . import ayra_bot, ayra_cmd, get_string, inline_mention, udB
 
 
-@ayiin_cmd(pattern="sudo$")
-async def sudo(event):
-    listsudo = AyiinChanger(sudoer())
-    text = "Daftar sudo\n\n"
-    no = 0
-    if listsudo:
-        for sudo in listsudo:
-            no += 1
-            text += f"{no}. {sudo}\n"
-        await eor(
-            event,
-            text
-        )
+@ayra_cmd(pattern="addsudo( (.*)|$)", fullsudo=False)
+async def _(ayra):
+    inputs = ayra.pattern_match.group(1).strip()
+    if ayra.reply_to_msg_id:
+        replied_to = await ayra.get_reply_message()
+        id = replied_to.sender_id
+        name = await replied_to.get_sender()
+    elif inputs:
+        try:
+            id = await ayra.client.parse_id(inputs)
+        except ValueError:
+            try:
+                id = int(inputs)
+            except ValueError:
+                id = inputs
+        try:
+            name = await ayra.client.get_entity(int(id))
+        except BaseException:
+            name = None
+    elif ayra.is_private:
+        id = ayra.chat_id
+        name = await ayra.get_chat()
     else:
-        await eod(event, "🔮 **Sudo:** `Dinonaktifkan`")
-
-
-@ayiin_cmd(pattern="addsudo(?:\\s|$)([\\s\\S]*)", allow_sudo=False)
-async def add(event):
-    suu = event.text[9:]
-    if f"{cmd}add " in event.text:
-        return
-    sudo = AyiinChanger(sudoer())
-    xxnx = await eor(event, '**Memproses...**')
-    var = "SUDO_USERS"
-    reply = await event.get_reply_message()
-    if not suu and not reply:
-        return await eod(
-            xxnx,
-            "Balas ke pengguna atau berikan user id untuk menambahkannya ke daftar pengguna sudo anda.",
-            time=45,
-        )
-    if suu and not suu.isnumeric():
-        return await eod(
-            xxnx,
-            "Berikan User ID atau reply ke pesan penggunanya.",
-            time=45
-        )
-    if event is None:
-        return
-    if suu:
-        target = suu
-    elif reply:
-        target = await get_user(event)
-    if target in sudo:
-        await xxnx.edit("Pengguna sudah ada di database.")
+        return await ayra.eor(get_string("sudo_1"), time=5)
+    if name and isinstance(name, User) and (name.bot or name.verified):
+        return await ayra.eor(get_string("sudo_4"))
+    name = inline_mention(name) if name else f"`{id}`"
+    if id == ayra_bot.uid:
+        mmm = get_string("sudo_2")
+    elif id in sudoers():
+        mmm = f"{name} `sudah menjadi Pengguna SUDO ...`"
     else:
-        add_sudo(target)
-        await xxnx.edit(
-            f"**Berhasil Menambahkan** `{target}` **ke Pengguna Sudo.**"
-        )
+        udB.set_key("SUDO", "True")
+        key = sudoers()
+        key.append(id)
+        udB.set_key("SUDOS", key)
+        mmm = f"**Ditambahkan** {name} **sebagai Pengguna SUDO**"
+    await ayra.eor(mmm, time=5)
 
 
-@ayiin_cmd(pattern="delsudo(?:\\s|$)([\\s\\S]*)", allow_sudo=False)
-async def _(event):
-    suu = event.text[8:]
-    sudo = AyiinChanger(sudoer())
-    xxx = await eor(event, '**Memproses...**')
-    reply = await event.get_reply_message()
-    if not suu and not reply:
-        return await eod(
-            xxx, 
-            "Balas ke pengguna atau berikan user id untuk menghapusnya dari daftar pengguna sudo Anda.",
-            time=45,
-        )
-    if suu and not suu.isnumeric():
-        return await eod(
-            xxx,
-            "Berikan User ID atau reply ke pesan penggunanya.",
-            time=45
-        )
-    if event is None:
-        return
-    if suu != "" and suu.isnumeric():
-        target = suu
-    elif reply:
-        target = await get_user(event)
-    if target in sudo:
-        del_sudo(target)
-        await xxx.edit(
-            f"**Berhasil Menghapus** `{target}` **dari Pengguna Sudo.**"
-        )
+@ayra_cmd(pattern="delsudo( (.*)|$)", fullsudo=False)
+async def _(ayra):
+    inputs = ayra.pattern_match.group(1).strip()
+    if ayra.reply_to_msg_id:
+        replied_to = await ayra.get_reply_message()
+        id = replied_to.sender_id
+        name = await replied_to.get_sender()
+    elif inputs:
+        try:
+            id = await ayra.client.parse_id(inputs)
+        except ValueError:
+            try:
+                id = int(inputs)
+            except ValueError:
+                id = inputs
+        try:
+            name = await ayra.client.get_entity(int(id))
+        except BaseException:
+            name = None
+    elif ayra.is_private:
+        id = ayra.chat_id
+        name = await ayra.get_chat()
     else:
-        await eod(
-            xxx,
-            "**Pengguna ini tidak ada dalam Daftar Pengguna Sudo anda.**",
-            time=45
-        )
+        return await ayra.eor(get_string("sudo_1"), time=5)
+    name = inline_mention(name) if name else f"`{id}`"
+    if id not in sudoers():
+        mmm = f"{name} `bukan Pengguna SUDO ...`"
+    else:
+        key = sudoers()
+        key.remove(id)
+        udB.set_key("SUDOS", key)
+        mmm = f"**DIHAPUS** {name} **dari Pengguna SUDO(s)**"
+    await ayra.eor(mmm, time=5)
 
 
-async def get_user(event):
-    if event.reply_to_msg_id:
-        previous_message = await event.get_reply_message()
-        if previous_message.forward:
-            replied_user = await event.client(
-                GetFullUserRequest(previous_message.forward.sender_id)
-            )
-        else:
-            replied_user = await event.client(
-                GetFullUserRequest(previous_message.sender_id)
-            )
-    return replied_user.user.id
-
-
-CMD_HELP.update(
-    {
-        "sudo": f"**Plugin : **`sudo`\
-        \n\n  »  **Perintah :** `{cmd}sudo`\
-        \n  »  **Kegunaan : **Untuk Mengecek informasi Sudo.\
-        \n\n  »  **Perintah :** `{cmd}addsudo` <reply/user id>\
-        \n  »  **Kegunaan : **Untuk Menambahkan User ke Pengguna Sudo.\
-        \n\n  »  **Perintah :** `{cmd}delsudo` <reply/user id>\
-        \n  »  **Kegunaan : **Untuk Menghapus User dari Pengguna Sudo.\
-        \n\n  •  **NOTE: Berikan Hak Sudo anda Kepada orang yang anda percayai**\
-    "
-    }
+@ayra_cmd(
+    pattern="listsudo$",
 )
+async def _(ayra):
+    sudos = sudoers()
+    if not sudos:
+        return await ayra.eor(get_string("sudo_3"), time=5)
+    msg = ""
+    for i in sudos:
+        try:
+            name = await ayra.client.get_entity(int(i))
+        except BaseException:
+            name = None
+        if name:
+            msg += f"• {inline_mention(name)} ( `{i}` )\n"
+        else:
+            msg += f"• `{i}` -> Pengguna tidak valid\n"
+    m = udB.get_key("SUDO") or True
+    if not m:
+        m = "[False](https://graph.org/Ayra-11-29)"
+    return await ayra.eor(
+        f"**SUDO MODE : {m}\n\nList of SUDO Users :**\n{msg}", link_preview=False
+    )
